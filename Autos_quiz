@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz de Cultura Automotriz</title>
+<style>
+  :root{
+    --bg:#0d0e11;
+    --panel:#16181d;
+    --panel-2:#1e2128;
+    --line:#2a2e37;
+    --text:#eef0f4;
+    --muted:#9aa3b2;
+    --accent:#ff5a1f;
+    --accent-2:#ffb020;
+    --ok:#2ecc71;
+    --bad:#ff4d5e;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(900px 420px at 50% -120px, rgba(255,90,31,.16), transparent 70%),
+      var(--bg);
+    color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0 0 auto 0;height:6px;
+    background:repeating-linear-gradient(90deg,#f4f4f4 0 14px,#111 14px 28px);
+    opacity:.85;
+  }
+  .app{max-width:680px;margin:0 auto;padding:34px 16px 48px}
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;color:var(--muted);font-size:.85rem;letter-spacing:.14em;text-transform:uppercase}
+  .brand svg{width:26px;height:26px;color:var(--accent)}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 22px;
+  }
+
+  h1{font-size:clamp(1.9rem,6vw,2.6rem);line-height:1.1;margin:0 0 12px;letter-spacing:-.02em}
+  h1 span{color:var(--accent)}
+  .lead{color:var(--muted);margin:0 0 22px;font-size:1.05rem}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:.85rem;color:var(--muted)}
+
+  .btn{
+    appearance:none;border:0;cursor:pointer;
+    background:var(--accent);color:#fff;
+    font:inherit;font-weight:700;font-size:1rem;
+    padding:13px 24px;border-radius:12px;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .btn:hover{filter:brightness(1.08)}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.ghost:hover{background:var(--panel-2)}
+  :focus-visible{outline:3px solid var(--accent-2);outline-offset:2px}
+
+  /* Quiz */
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.9rem;color:var(--muted)}
+  .topbar strong{color:var(--text)}
+  .stats{display:flex;gap:14px}
+  .bar{height:8px;background:var(--panel-2);border-radius:99px;overflow:hidden;margin-bottom:18px;border:1px solid var(--line)}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:99px;transition:width .4s ease}
+
+  .cat{display:inline-block;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2);margin-bottom:8px;font-weight:700}
+  .question{font-size:clamp(1.2rem,4.4vw,1.55rem);line-height:1.3;margin:0 0 20px;font-weight:700}
+
+  .options{display:grid;gap:10px}
+  .option{
+    display:flex;align-items:center;gap:14px;text-align:left;width:100%;
+    background:var(--panel-2);color:var(--text);
+    border:1.5px solid var(--line);border-radius:12px;
+    padding:13px 14px;font:inherit;font-size:1rem;cursor:pointer;
+    transition:border-color .12s ease, background .12s ease, transform .12s ease, opacity .2s ease;
+  }
+  .option:hover:not(:disabled){border-color:var(--accent);transform:translateX(3px)}
+  .option .key{
+    flex:0 0 auto;width:30px;height:30px;border-radius:8px;
+    display:grid;place-items:center;
+    background:var(--bg);border:1px solid var(--line);
+    font-weight:700;font-size:.85rem;color:var(--muted);
+  }
+  .option:disabled{cursor:default}
+  .option.correct{border-color:var(--ok);background:rgba(46,204,113,.12)}
+  .option.correct .key{background:var(--ok);border-color:var(--ok);color:#06210f}
+  .option.wrong{border-color:var(--bad);background:rgba(255,77,94,.12)}
+  .option.wrong .key{background:var(--bad);border-color:var(--bad);color:#2a050a}
+  .option.dim{opacity:.45}
+
+  .feedback{margin-top:18px;padding:16px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);animation:rise .25s ease}
+  .feedback.ok{border-color:rgba(46,204,113,.5)}
+  .feedback.bad{border-color:rgba(255,77,94,.5)}
+  .feedback h3{margin:0 0 4px;font-size:1.05rem}
+  .feedback.ok h3{color:var(--ok)}
+  .feedback.bad h3{color:var(--bad)}
+  .feedback p{margin:0 0 14px;color:var(--muted)}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* Resultado */
+  .result{text-align:center}
+  .gauge{width:min(320px,86%);height:auto;display:block;margin:0 auto 4px;overflow:visible}
+  .gauge .track{fill:none;stroke:var(--panel-2);stroke-width:14;stroke-linecap:round}
+  .gauge .fill{fill:none;stroke:url(#gaugeGrad);stroke-width:14;stroke-linecap:round;stroke-dasharray:0 100;transition:stroke-dasharray 1.3s cubic-bezier(.2,.8,.2,1)}
+  .gauge .tick{stroke:var(--line);stroke-width:2}
+  .gauge .needle{transform-origin:110px 110px;transform:rotate(-90deg);transition:transform 1.3s cubic-bezier(.2,.8,.2,1)}
+  .gauge .needle line{stroke:var(--text);stroke-width:3;stroke-linecap:round}
+  .gauge .needle circle{fill:var(--accent)}
+  .score-big{font-size:3rem;font-weight:800;line-height:1;margin:0}
+  .score-big small{font-size:1.2rem;color:var(--muted);font-weight:600}
+  .rank{font-size:1.3rem;font-weight:700;color:var(--accent-2);margin:8px 0 4px}
+  .msg{color:var(--muted);margin:0 0 20px}
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .review{margin-top:26px;text-align:left;border-top:1px solid var(--line);padding-top:18px}
+  .review h3{margin:0 0 10px;font-size:1rem}
+  .review ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+  .review li{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.92rem}
+  .review li b{display:block;margin-bottom:2px}
+  .review li span{color:var(--ok)}
+  .perfect{color:var(--ok);margin:0}
+
+  @media (max-width:420px){
+    .card{padding:20px 16px}
+    .stats{gap:10px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/>
+      <path d="M12 9.8V3.2M10.1 13.1 4.4 16.4M13.9 13.1l5.7 3.3"/>
+    </svg>
+    <span>Garage Trivia</span>
+  </div>
+
+  <!-- Inicio -->
+  <section id="start" class="card">
+    <h1>¿Cuánto sabes de <span>autos</span>?</h1>
+    <p class="lead">Marcas, mecánica, competición y modelos que hicieron historia. Responde 12 preguntas y mide qué tan afinado traes el motor.</p>
+    <div class="chips">
+      <span class="chip">12 preguntas</span>
+      <span class="chip">4 opciones cada una</span>
+      <span class="chip">Sin límite de tiempo</span>
+    </div>
+    <button class="btn" id="btnStart" type="button">Arrancar motor</button>
+  </section>
+
+  <!-- Pregunta -->
+  <section id="quiz" hidden>
+    <div class="topbar">
+      <div>Pregunta <strong id="qNum">1</strong> de <span id="qTotal">12</span></div>
+      <div class="stats">
+        <div>Aciertos <strong id="qScore">0</strong></div>
+        <div>Racha <strong id="qStreak">0</strong></div>
+      </div>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="progress"></i></div>
+
+    <div class="card">
+      <span class="cat" id="qCat"></span>
+      <h2 class="question" id="qText"></h2>
+      <div class="options" id="options" role="group" aria-label="Opciones de respuesta"></div>
+      <div class="feedback" id="feedback" hidden aria-live="polite">
+        <h3 id="fbTitle"></h3>
+        <p id="fbText"></p>
+        <button class="btn" id="btnNext" type="button">Siguiente</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resultado -->
+  <section id="result" class="card result" hidden>
+    <svg class="gauge" viewBox="0 0 220 130" role="img" aria-label="Velocímetro con tu puntaje">
+      <defs>
+        <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#ffb020"/>
+          <stop offset="1" stop-color="#ff5a1f"/>
+        </linearGradient>
+      </defs>
+      <path class="track" d="M20 110 A90 90 0 0 1 200 110" pathLength="100"/>
+      <path class="fill" id="gaugeFill" d="M20 110 A90 90 0 0 1 200 110" pathLength="100"/>
+      <g class="needle" id="needle">
+        <line x1="110" y1="110" x2="110" y2="36"/>
+        <circle cx="110" cy="110" r="7"/>
+      </g>
+    </svg>
+    <p class="score-big"><span id="finalScore">0</span><small> / <span id="finalTotal">12</span></small></p>
+    <p class="rank" id="rank"></p>
+    <p class="msg" id="rankMsg"></p>
+    <div class="actions">
+      <button class="btn" id="btnAgain" type="button">Jugar de nuevo</button>
+    </div>
+    <div class="review" id="review" hidden>
+      <h3>Para repasar</h3>
+      <ul id="reviewList"></ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var QUESTIONS = [
+    {
+      cat: "Marcas e historia",
+      q: "¿Qué representan los cuatro anillos del logotipo de Audi?",
+      options: [
+        "Las cuatro ruedas del auto",
+        "Las cuatro empresas que formaron Auto Union en 1932",
+        "Los cuatro cilindros del primer motor de la marca",
+        "Las cuatro victorias en Le Mans"
+      ],
+      answer: 1,
+      explain: "Los anillos simbolizan la unión de Audi, DKW, Horch y Wanderer en Auto Union, en 1932."
+    },
+    {
+      cat: "Mecánica",
+      q: "¿Qué significan las siglas ABS en un auto?",
+      options: [
+        "Sistema antibloqueo de frenos",
+        "Amortiguación balanceada de suspensión",
+        "Asistente de baja velocidad",
+        "Aceleración bajo sistema"
+      ],
+      answer: 0,
+      explain: "ABS viene de Anti-lock Braking System. Evita que las ruedas se bloqueen al frenar fuerte y te deja seguir dirigiendo."
+    },
+    {
+      cat: "Competición",
+      q: "¿En qué país se corren las famosas 24 Horas de Le Mans?",
+      options: ["Alemania", "Italia", "Francia", "Bélgica"],
+      answer: 2,
+      explain: "Se disputan en el Circuit de la Sarthe, cerca de la ciudad francesa de Le Mans."
+    },
+    {
+      cat: "Modelos icónicos",
+      q: "¿Qué fabricante produjo el legendario Skyline GT-R, apodado \"Godzilla\"?",
+      options: ["Toyota", "Nissan", "Honda", "Mitsubishi"],
+      answer: 1,
+      explain: "El Skyline GT-R es de Nissan. El apodo \"Godzilla\" nació por su dominio en las pistas durante los años 90."
+    },
+    {
+      cat: "Eléctricos",
+      q: "¿En qué unidad se mide normalmente la capacidad de la batería de un auto eléctrico?",
+      options: ["Kilovatios-hora (kWh)", "Caballos de fuerza (hp)", "Newton-metro (Nm)", "Litros (L)"],
+      answer: 0,
+      explain: "Los kWh indican cuánta energía almacena la batería, y de ahí depende en buena parte la autonomía."
+    },
+    {
+      cat: "Historia en México",
+      q: "¿Hasta qué año se fabricó el clásico Vocho (Volkswagen Sedán) en la planta de Puebla?",
+      options: ["1985", "1994", "2003", "2010"],
+      answer: 2,
+      explain: "El último Vocho salió de la línea de producción de Puebla en julio de 2003."
+    },
+    {
+      cat: "Modelos icónicos",
+      q: "¿Cuál es el auto más vendido de la historia?",
+      options: ["Volkswagen Beetle", "Ford Model T", "Honda Civic", "Toyota Corolla"],
+      answer: 3,
+      explain: "El Toyota Corolla, lanzado en 1966, ha superado los 50 millones de unidades vendidas."
+    },
+    {
+      cat: "Mecánica",
+      q: "¿Qué pieza del motor convierte el movimiento de vaivén de los pistones en movimiento giratorio?",
+      options: ["Árbol de levas", "Cigüeñal", "Volante de inercia", "Biela"],
+      answer: 1,
+      explain: "El cigüeñal recibe el empuje de las bielas y lo transforma en rotación que llega a la transmisión."
+    },
+    {
+      cat: "Marcas e historia",
+      q: "¿De qué país es la marca Škoda?",
+      options: ["Polonia", "Eslovaquia", "Austria", "República Checa"],
+      answer: 3,
+      explain: "Škoda nació en Mladá Boleslav, República Checa, y hoy pertenece al Grupo Volkswagen."
+    },
+    {
+      cat: "Velocidad",
+      q: "¿Cuál fue el primer auto de producción en superar los 400 km/h?",
+      options: ["McLaren F1", "Bugatti Veyron 16.4", "Ferrari F40", "Lamborghini Diablo"],
+      answer: 1,
+      explain: "El Bugatti Veyron 16.4 alcanzó cerca de 407 km/h en 2005. El McLaren F1 se quedó en unos 391 km/h."
+    },
+    {
+      cat: "Mecánica",
+      q: "¿Qué configuración de motor es característica del Porsche 911?",
+      options: [
+        "V8 delantero",
+        "Cuatro cilindros en línea",
+        "Bóxer de seis cilindros ubicado atrás",
+        "Motor rotativo Wankel"
+      ],
+      answer: 2,
+      explain: "El 911 usa un motor bóxer de seis cilindros opuestos, montado detrás del eje trasero desde 1964."
+    },
+    {
+      cat: "Marcas e historia",
+      q: "El caballo del escudo de Porsche viene del escudo de armas de una ciudad. ¿Cuál?",
+      options: ["Múnich", "Stuttgart", "Maranello", "Turín"],
+      answer: 1,
+      explain: "Es el emblema de Stuttgart, ciudad donde Porsche tiene su sede. De hecho, Stuttgart significa \"jardín de yeguas\"."
+    }
+  ];
+
+  var RANKS = [
+    { min: 1.0, title: "Leyenda de Le Mans", msg: "Puntaje perfecto. Podrías dar cátedra en cualquier taller." },
+    { min: 0.8, title: "Piloto de pruebas", msg: "Dominas el tema. Solo te faltó una vuelta más de práctica." },
+    { min: 0.6, title: "Mecánico de confianza", msg: "Buen nivel. Sabes bastante, aunque aún hay detalles por afinar." },
+    { min: 0.35, title: "Copiloto con mapa", msg: "Vas por buen camino. Echa un vistazo al repaso y vuelve a intentarlo." },
+    { min: 0, title: "Recién sacó la licencia", msg: "Todos empezamos en primera velocidad. Dale otra vuelta al circuito." }
+  ];
+
+  function $(id) { return document.getElementById(id); }
+
+  var screens = { start: $("start"), quiz: $("quiz"), result: $("result") };
+  var el = {
+    qNum: $("qNum"), qTotal: $("qTotal"), qScore: $("qScore"), qStreak: $("qStreak"),
+    progress: $("progress"), qCat: $("qCat"), qText: $("qText"), options: $("options"),
+    feedback: $("feedback"), fbTitle: $("fbTitle"), fbText: $("fbText"), btnNext: $("btnNext"),
+    finalScore: $("finalScore"), finalTotal: $("finalTotal"), rank: $("rank"), rankMsg: $("rankMsg"),
+    gaugeFill: $("gaugeFill"), needle: $("needle"), review: $("review"), reviewList: $("reviewList")
+  };
+
+  var order = [], idx = 0, score = 0, streak = 0, locked = false, missed = [], current = null;
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function show(name) {
+    for (var k in screens) { screens[k].hidden = (k !== name); }
+    window.scrollTo(0, 0);
+  }
+
+  function start() {
+    order = shuffle(QUESTIONS);
+    idx = 0; score = 0; streak = 0; missed = [];
+    el.qTotal.textContent = order.length;
+    show("quiz");
+    render();
+  }
+
+  function updateStats() {
+    el.qScore.textContent = score;
+    el.qStreak.textContent = streak;
+  }
+
+  function render() {
+    locked = false;
+    var item = order[idx];
+    var opts = shuffle(item.options.map(function (t, i) { return { text: t, ok: i === item.answer }; }));
+    current = { item: item, opts: opts };
+
+    el.qNum.textContent = idx + 1;
+    el.progress.style.width = (idx / order.length * 100) + "%";
+    el.qCat.textContent = item.cat;
+    el.qText.textContent = item.q;
+    el.feedback.hidden = true;
+    updateStats();
+
+    el.options.innerHTML = "";
+    opts.forEach(function (o, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "option";
+      var key = document.createElement("span");
+      key.className = "key";
+      key.textContent = String.fromCharCode(65 + i);
+      var label = document.createElement("span");
+      label.textContent = o.text;
+      b.appendChild(key);
+      b.appendChild(label);
+      b.addEventListener("click", function () { choose(i); });
+      el.options.appendChild(b);
+    });
+  }
+
+  function choose(i) {
+    if (locked) return;
+    locked = true;
+    var picked = current.opts[i];
+    var buttons = el.options.querySelectorAll(".option");
+
+    buttons.forEach(function (b, k) {
+      b.disabled = true;
+      if (current.opts[k].ok) b.classList.add("correct");
+      else if (k === i) b.classList.add("wrong");
+      else b.classList.add("dim");
+    });
+
+    var correctText = current.opts.filter(function (o) { return o.ok; })[0].text;
+
+    if (picked.ok) {
+      score++; streak++;
+      el.fbTitle.textContent = streak >= 3 ? "¡Correcto! Vas en racha." : "¡Correcto!";
+      el.feedback.className = "feedback ok";
+    } else {
+      streak = 0;
+      missed.push({ q: current.item.q, a: correctText });
+      el.fbTitle.textContent = "Casi, pero no.";
+      el.feedback.className = "feedback bad";
+    }
+
+    el.fbText.textContent = current.item.explain;
+    el.btnNext.textContent = (idx === order.length - 1) ? "Ver resultado" : "Siguiente";
+    el.feedback.hidden = false;
+    el.progress.style.width = ((idx + 1) / order.length * 100) + "%";
+    updateStats();
+    el.btnNext.focus();
+  }
+
+  function next() {
+    if (!locked) return;
+    if (idx < order.length - 1) { idx++; render(); }
+    else { finish(); }
+  }
+
+  function finish() {
+    var total = order.length;
+    var pct = score / total;
+    var rank = RANKS.filter(function (r) { return pct >= r.min; })[0];
+
+    el.finalScore.textContent = score;
+    el.finalTotal.textContent = total;
+    el.rank.textContent = rank.title;
+    el.rankMsg.textContent = rank.msg;
+
+    el.reviewList.innerHTML = "";
+    if (missed.length) {
+      missed.forEach(function (m) {
+        var li = document.createElement("li");
+        var b = document.createElement("b");
+        b.textContent = m.q;
+        var s = document.createElement("span");
+        s.textContent = "Respuesta: " + m.a;
+        li.appendChild(b);
+        li.appendChild(s);
+        el.reviewList.appendChild(li);
+      });
+      el.review.hidden = false;
+    } else {
+      el.review.hidden = true;
+    }
+
+    el.gaugeFill.style.strokeDasharray = "0 100";
+    el.needle.style.transform = "rotate(-90deg)";
+    show("result");
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        el.gaugeFill.style.strokeDasharray = (pct * 100) + " 100";
+        el.needle.style.transform = "rotate(" + (-90 + pct * 180) + "deg)";
+      });
+    });
+  }
+
+  $("btnStart").addEventListener("click", start);
+  $("btnAgain").addEventListener("click", start);
+  el.btnNext.addEventListener("click", next);
+
+  document.addEventListener("keydown", function (e) {
+    if (screens.quiz.hidden || locked) return;
+    var n = parseInt(e.key, 10);
+    if (n >= 1 && n <= 4) choose(n - 1);
+  });
+})();
+</script>
+</body>
+</html>
